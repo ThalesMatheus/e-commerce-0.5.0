@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://kit.fontawesome.com/56a1c97f47.js" crossorigin="anonymous"></script>
+
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+  <script>
+    let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+let width = window.innerWidth;
+let height = window.innerHeight;
+
+class Particle {
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.accelX = 0;
+    this.accelY = 0;
+    this.life = 2000;
+    this.alpha = 1;
+    this.size = 2;
+  }
+  
+  update() {
+    this.vx += this.accelX;
+    this.vy += this.accelY;
+    this.x += this.vx;
+    this.y += this.vy;
+  }
+  
+  draw(ctx) {
+    ctx.fillStyle = `rgba(34, 162, 238, ${this.alpha})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+    ctx.fill();
+    ctx.closePath();
+  }
+  
+  isAlive() {
+    return this.life >= 0;
+  }
+}
+
+class ParticleSystem {
+  constructor() {
+    this.particles = [];
+    this.updateHandler = undefined;
+  }
+  
+  addParticle(particle) {
+    this.particles.push(particle);
+  }
+
+  update(deltaTime = 0) {
+    this.particles.forEach(particle => {
+      particle.update(deltaTime);
+      this.updateHandler && this.updateHandler(particle);
+    });
+  }
+  
+  onUpdate(fn) {
+    this.updateHandler = fn;
+  }
+}
+
+let system = new ParticleSystem();
+
+for (let i = 0; i < 200; i++) {
+  let particle = new Particle();
+  let angle = Math.PI/2 * (Math.random() - 0.5) * 2;
+  particle.x = Math.random() * width;
+  particle.y = Math.random() * height;
+  particle.life = Math.random() * 1000 + 1000;
+  particle.size = Math.random() * 1.5;  
+  particle.maxLife = particle.life;
+  system.addParticle(particle);
+}
+
+system.onUpdate((particle) => {
+  if (!particle.isAlive()) {
+    particle.x = Math.random() * width;
+    particle.y = Math.random() * height;
+    particle.vx = 0;
+    particle.vy = 0;
+    particle.life = Math.random() * 1000 + 1000;
+    particle.maxLife = particle.life;    
+  }
+  
+  particle.life -= 10;
+  particle.accelX = (Math.random() - 0.5) * 0.02;
+  particle.accelY = (Math.random() - 0.5) * 0.02;
+
+  if (particle.life >= particle.maxLife / 2) {
+    particle.alpha = 1 - (particle.life / particle.maxLife);
+  } else {
+    particle.alpha = particle.life / particle.maxLife;
+  }
+
+  particle.update();
+});
+
+function update() {
+  system.update();
+}
+
+function draw() {
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#010101';
+  ctx.fillRect(0, 0, width, height);
+  
+  let grad = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height/2, width);
+  grad.addColorStop(0, '#115a97');
+  grad.addColorStop(0.75, 'transparent');
+  
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+  
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = '#22a2ee';
+  
+  system.particles.forEach(particle => particle.draw(ctx));
+}
+
+function render() {
+  update();
+  draw();
+  requestAnimationFrame(render);
+}
+
+function setup() {
+  canvas.width = width;
+  canvas.height = height;
+}
+
+function init() {
+  setup();
+  render();
+}
+
+init();
+  </script>
+</html>
